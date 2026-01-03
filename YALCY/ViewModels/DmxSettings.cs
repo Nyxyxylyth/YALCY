@@ -11,6 +11,13 @@ public interface IDmxChannelSetting
     int[]? Channel { get; set; }
 }
 
+public interface IDmxRgbFakeChannelSetting
+{
+    string Label { get; set; }
+    int[]? Channel { get; set; }
+    bool[]? RgbFake { get; set; }
+}
+
 public class DmxSingleSetting : ReactiveObject
 {
     private string _label;
@@ -62,6 +69,44 @@ public class DmxChannelSetting : ReactiveObject, IDmxChannelSetting
         Label = label;
         _label = label;
         Channel = channels;
+    }
+}
+
+public class DmxRgbFakeChannelSetting : ReactiveObject, IDmxRgbFakeChannelSetting
+{
+    private string _label;
+    private int[]? _channel;
+    private bool[]? _rgbFake;
+
+    [DataMember]
+    public string Label
+    {
+        get => _label;
+        set => this.RaiseAndSetIfChanged(ref _label, value);
+    }
+
+    [DataMember]
+    public int[]? Channel
+    {
+        get => _channel;
+        set => this.RaiseAndSetIfChanged(ref _channel, value);
+    }
+
+    [DataMember]
+    public bool[]? RgbFake
+    {
+        get => _rgbFake;
+        set => this.RaiseAndSetIfChanged(ref _rgbFake, value);
+    }
+
+    public DmxRgbFakeChannelSetting(string label, int[] channels, bool[] rgbFakes)
+    {
+        Label = label;
+        _label = label;
+        if( channels != null )
+            Channel = channels;
+        if( rgbFakes != null )
+            RgbFake = rgbFakes;
     }
 }
 
@@ -149,26 +194,27 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
 
 public partial class MainWindowViewModel
 {
-    public ObservableCollection<DmxSingleSetting> AdvancedSettingsContainer { get; set; }
-    public ObservableCollection<IDmxChannelSetting> EffectsChannelSettingsContainer { get; set; }
     public ObservableCollection<IDmxChannelSetting> MasterDimmerSettingsContainer { get; set; }
     public ObservableCollection<IDmxChannelSetting> ColorChannelSettingsContainer { get; set; }
+    public ObservableCollection<IDmxRgbFakeChannelSetting> RgbFakeChannelSettingsContainer { get; set; }
+    public ObservableCollection<IDmxChannelSetting> EffectsChannelSettingsContainer { get; set; }
+    public ObservableCollection<DmxSingleSetting> AdvancedSettingsContainer { get; set; }
     public ObservableCollection<DmxSingleSetting> InstrumentNoteSettingsContainer { get; set; }
     public ObservableCollection<DmxSingleSetting> BroadcastSettingsContainer { get; set; }
 
-    public DmxDimmerChannelSetting MasterDimmerSettings = new("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106);
+    public DmxDimmerChannelSetting MasterDimmerSettings = new("Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50);
 
     public DmxDimmerValueSetting MasterDimmerValues =
-        new("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255);
+        new("Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255);
 
-    public DmxChannelSetting StrobeChannels = new("Strobe Channels", 7, 14, 21, 28, 35, 42, 49, 56);
-    public DmxChannelSetting FogChannels = new("Fog Channels", 6, 13, 20, 27, 34, 41, 48, 55);
     public DmxChannelSetting RedChannels = new("Red Channels", 2, 9, 16, 23, 30, 37, 44, 51);
-    public DmxChannelSetting BlueChannels = new("Blue Channels", 3, 10, 17, 24, 31, 38, 45, 52);
-    public DmxChannelSetting YellowChannels = new("Yellow Channels", 4, 11, 18, 25, 32, 39, 46, 53);
-    public DmxChannelSetting GreenChannels = new("Green Channels", 5, 12, 19, 26, 33, 40, 47, 54);
-    public DmxSingleSetting BpmChannelSetting = new("BPM Channel", 56);
-    public DmxSingleSetting CueChangeChannelSetting = new("Cue Change Channel", 57);
+    public DmxChannelSetting GreenChannels = new("Green Channels", 3, 10, 17, 24, 31, 38, 45, 52);
+    public DmxChannelSetting BlueChannels = new("Blue Channels", 4, 11, 18, 25, 32, 39, 46, 53);
+    public DmxRgbFakeChannelSetting YellowChannels = new("Yellow Channels", new int[] { 5, 12, 19, 26, 33, 40, 47, 54 }, new bool[] { false, false, false, false, false, false, false, false });
+    public DmxRgbFakeChannelSetting StrobeChannels = new("Strobe Channels", new int[] { 6, 13, 20, 27, 34, 41, 48, 55 }, new bool[] { false, false, false, false, false, false, false, false });
+    public DmxChannelSetting FogChannels = new("Fog Channels", 7, 14, 21, 28, 35, 42, 49, 56);
+    public DmxSingleSetting BpmChannelSetting = new("BPM Channel", 57);
+    public DmxSingleSetting CueChangeChannelSetting = new("Cue Change Channel", 58);
     public DmxSingleSetting PostProcessingChannelSetting = new("Post-Processing Channel", 62);
     public DmxSingleSetting KeyFrameChannelSetting = new("KeyFrame Channel", 60);
     public DmxSingleSetting BeatLineChannelSetting = new("BeatLine Channel", 58);
@@ -214,24 +260,24 @@ public partial class MainWindowViewModel
 
         MasterDimmerSettings.Channel = SettingsManager.MasterDimmerSettingsChannel;
         MasterDimmerValues.Channel = SettingsManager.MasterDimmerValuesChannel;
-        StrobeChannels.Channel = SettingsManager.StrobeChannelsChannel;
-        FogChannels.Channel = SettingsManager.FogChannelsChannel;
         RedChannels.Channel = SettingsManager.RedChannelsChannel;
-        BlueChannels.Channel = SettingsManager.BlueChannelsChannel;
-        YellowChannels.Channel = SettingsManager.YellowChannelsChannel;
         GreenChannels.Channel = SettingsManager.GreenChannelsChannel;
+        BlueChannels.Channel = SettingsManager.BlueChannelsChannel;
+        if(SettingsManager.YellowChannelsChannel != null )
+            YellowChannels.Channel = SettingsManager.YellowChannelsChannel;
+        if(SettingsManager.YellowChannelsRgbFake != null )
+            YellowChannels.RgbFake = SettingsManager.YellowChannelsRgbFake;
+        if (SettingsManager.StrobeChannelsChannel != null)
+            StrobeChannels.Channel = SettingsManager.StrobeChannelsChannel;
+        if (SettingsManager.StrobeChannelsRgbFake != null)
+            StrobeChannels.RgbFake = SettingsManager.StrobeChannelsRgbFake;
+        FogChannels.Channel = SettingsManager.FogChannelsChannel;
 
         BroadcastUniverseSetting.Value = SettingsManager.BroadcastUniverseSettingValue;
     }
 
     private void InitializeDmxCollections()
     {
-        EffectsChannelSettingsContainer = new ObservableCollection<IDmxChannelSetting>
-        {
-            FogChannels,
-            StrobeChannels,
-        };
-
         MasterDimmerSettingsContainer = new ObservableCollection<IDmxChannelSetting>
         {
             MasterDimmerSettings,
@@ -241,9 +287,19 @@ public partial class MainWindowViewModel
         ColorChannelSettingsContainer = new ObservableCollection<IDmxChannelSetting>
         {
             RedChannels,
-            BlueChannels,
-            YellowChannels,
             GreenChannels,
+            BlueChannels,
+        };
+
+        RgbFakeChannelSettingsContainer = new ObservableCollection<IDmxRgbFakeChannelSetting>
+        {
+            YellowChannels,
+            StrobeChannels,
+        };
+
+        EffectsChannelSettingsContainer = new ObservableCollection<IDmxChannelSetting>
+        {
+            FogChannels,
         };
 
         InstrumentNoteSettingsContainer = new ObservableCollection<DmxSingleSetting>

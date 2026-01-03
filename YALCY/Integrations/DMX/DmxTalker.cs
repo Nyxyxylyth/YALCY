@@ -118,26 +118,27 @@ public class DmxTalker
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
         // Helper: enqueue value to a whole channel group
-        void EnqueueToChannels(DmxChannelSetting group, byte value)
+        void EnqueueToChannels(int[] channels, byte value)
         {
-            if (group.Channel == null) return;
-
-            for (int i = 0; i < 8; i++)
+            if (channels == null)
             {
-                int ch = group.Channel[i];
-                if (ch > 0)
-                    byteQueues[ch - 1].Enqueue(value);
+                for (int i = 0; i < 8; i++)
+                {
+                    int ch = channels[i];
+                    if (ch > 0)
+                        byteQueues[ch - 1].Enqueue(value);
+                }
             }
         }
 
         // Helper: enqueue LED pattern based on parameter bitmask
-        void EnqueueLeds(DmxChannelSetting group)
+        void EnqueueLeds(int[] channels)
         {
-            if (group.Channel == null) return;
+            if (channels == null) return;
 
             for (int i = 0; i < 8; i++)
             {
-                int ch = group.Channel[i];
+                int ch = channels[i];
                 if (ch > 0)
                     byteQueues[ch - 1].Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
             }
@@ -148,30 +149,30 @@ public class DmxTalker
         {
             var bpm = UdpIntake.BeatsPerMinute.Value;
             byte value = (byte)StrobeDmxFromBpm(bpm, multiplier);
-            EnqueueToChannels(mainViewModel.StrobeChannels, value);
+            EnqueueToChannels(mainViewModel.StrobeChannels.Channel, value);
         }
 
         switch (commandId)
         {
             case StageKitTalker.CommandId.FogOn:
-                EnqueueToChannels(mainViewModel.FogChannels, 255);
+                EnqueueToChannels(mainViewModel.FogChannels.Channel, 255);
                 break;
 
             case StageKitTalker.CommandId.FogOff:
-                EnqueueToChannels(mainViewModel.FogChannels, 0);
+                EnqueueToChannels(mainViewModel.FogChannels.Channel, 0);
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
-                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
-                EnqueueToChannels(mainViewModel.FogChannels, 0);
-                EnqueueToChannels(mainViewModel.BlueChannels, 0);
-                EnqueueToChannels(mainViewModel.GreenChannels, 0);
-                EnqueueToChannels(mainViewModel.YellowChannels, 0);
-                EnqueueToChannels(mainViewModel.RedChannels, 0);
+                EnqueueToChannels(mainViewModel.RedChannels.Channel, 0);
+                EnqueueToChannels(mainViewModel.GreenChannels.Channel, 0);
+                EnqueueToChannels(mainViewModel.BlueChannels.Channel, 0);
+                EnqueueToChannels(mainViewModel.YellowChannels.Channel, 0);
+                EnqueueToChannels(mainViewModel.StrobeChannels.Channel, 0);
+                EnqueueToChannels(mainViewModel.FogChannels.Channel, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeOff:
-                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
+                EnqueueToChannels(mainViewModel.StrobeChannels.Channel, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeSlow:
@@ -190,21 +191,22 @@ public class DmxTalker
                 HandleStrobe(10);
                 break;
 
-            case StageKitTalker.CommandId.BlueLeds:
-                EnqueueLeds(mainViewModel.BlueChannels);
+            case StageKitTalker.CommandId.RedLeds:
+                EnqueueLeds(mainViewModel.RedChannels.Channel);
                 break;
 
             case StageKitTalker.CommandId.GreenLeds:
-                EnqueueLeds(mainViewModel.GreenChannels);
+                EnqueueLeds(mainViewModel.GreenChannels.Channel);
+                break;
+
+            case StageKitTalker.CommandId.BlueLeds:
+                EnqueueLeds(mainViewModel.BlueChannels.Channel);
                 break;
 
             case StageKitTalker.CommandId.YellowLeds:
-                EnqueueLeds(mainViewModel.YellowChannels);
+                EnqueueLeds(mainViewModel.YellowChannels.Channel);
                 break;
 
-            case StageKitTalker.CommandId.RedLeds:
-                EnqueueLeds(mainViewModel.RedChannels);
-                break;
         }
     }
     private byte StrobeDmxFromBpm(float bpm, int speed) {

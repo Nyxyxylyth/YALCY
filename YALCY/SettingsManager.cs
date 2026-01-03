@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using DynamicData;
 using HueApi.Models.Clip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,6 +14,7 @@ public class SettingsContainer
     public List<EnableSetting> CurrentEnableSettings { get; set; }
     public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
     public List<DmxChannelSetting> CurrentChannelSettings { get; set; }
+    public List<DmxRgbFakeChannelSetting> CurrentRgbFakeChannelSettings { get; set; }
     public DmxDimmerChannelSetting CurrentMasterDimmerChannelSettings { get; set; }
     public DmxDimmerValueSetting CurrentMasterDimmerValueChannelSettings { get; set; }
     public RegisterEntertainmentResult HueAuthResult { get; set; }
@@ -33,6 +35,7 @@ internal static class SettingsManager
     {
         CurrentEnableSettings = new List<EnableSetting>(),
         CurrentChannelSettings = new List<DmxChannelSetting>(),
+        CurrentRgbFakeChannelSettings = new List<DmxRgbFakeChannelSetting>(),
         CurrentSingleSettings = new List<DmxSingleSetting>(),
         CurrentMasterDimmerChannelSettings =
             new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106),
@@ -75,12 +78,14 @@ internal static class SettingsManager
     public static int BroadcastUniverseSettingValue { get; private set; }
     public static int[]? MasterDimmerSettingsChannel { get; private set; }
     public static int[]? MasterDimmerValuesChannel { get; private set; }
-    public static int[]? StrobeChannelsChannel { get; private set; }
-    public static int[]? FogChannelsChannel { get; private set; }
     public static int[]? RedChannelsChannel { get; private set; }
+    public static int[]? GreenChannelsChannel { get; private set; }
     public static int[]? BlueChannelsChannel { get; private set; }
     public static int[]? YellowChannelsChannel { get; private set; }
-    public static int[]? GreenChannelsChannel { get; private set; }
+    public static bool[]? YellowChannelsRgbFake { get; private set; }
+    public static int[]? StrobeChannelsChannel { get; private set; }
+    public static bool[]? StrobeChannelsRgbFake { get; private set; }
+    public static int[]? FogChannelsChannel { get; private set; }
     public static string? HueAuthResultUsername { get; private set; }
     public static string? HueAuthResultStreamingClientKey { get; private set; }
     public static string? HueAuthResultIp { get; private set; }
@@ -126,15 +131,15 @@ internal static class SettingsManager
         settings.CurrentSingleSettings.Add(mainViewModel.PauseStateSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.SongSectionSetting);
 
-        settings.CurrentChannelSettings.Add(mainViewModel.StrobeChannels);
-        settings.CurrentChannelSettings.Add(mainViewModel.FogChannels);
-        settings.CurrentChannelSettings.Add(mainViewModel.RedChannels);
-        settings.CurrentChannelSettings.Add(mainViewModel.BlueChannels);
-        settings.CurrentChannelSettings.Add(mainViewModel.YellowChannels);
-        settings.CurrentChannelSettings.Add(mainViewModel.GreenChannels);
-
         settings.CurrentMasterDimmerChannelSettings = mainViewModel.MasterDimmerSettings;
         settings.CurrentMasterDimmerValueChannelSettings = mainViewModel.MasterDimmerValues;
+
+        settings.CurrentChannelSettings.Add(mainViewModel.RedChannels);
+        settings.CurrentChannelSettings.Add(mainViewModel.GreenChannels);
+        settings.CurrentChannelSettings.Add(mainViewModel.BlueChannels);
+        settings.CurrentRgbFakeChannelSettings.Add(mainViewModel.YellowChannels);
+        settings.CurrentRgbFakeChannelSettings.Add(mainViewModel.StrobeChannels);
+        settings.CurrentChannelSettings.Add(mainViewModel.FogChannels);
 
         settings.HueAuthResult = mainViewModel.HueAuthResult;
         settings.HueBridgeIP = mainViewModel.HueBridgeIp;
@@ -287,30 +292,40 @@ internal static class SettingsManager
                 {
                     switch (channel.Label)
                     {
-                        case "Fog Channels":
-                            FogChannelsChannel = channel.Channel;
-                            break;
-
-                        case "Strobe Channels":
-                            StrobeChannelsChannel = channel.Channel;
-                            break;
-
                         case "Red Channels":
                             RedChannelsChannel = channel.Channel;
-                            break;
-
-                        case "Blue Channels":
-                            BlueChannelsChannel = channel.Channel;
-                            break;
-
-                        case "Yellow Channels":
-                            YellowChannelsChannel = channel.Channel;
                             break;
 
                         case "Green Channels":
                             GreenChannelsChannel = channel.Channel;
                             break;
 
+                        case "Blue Channels":
+                            BlueChannelsChannel = channel.Channel;
+                            break;
+
+                        case "Fog Channels":
+                            FogChannelsChannel = channel.Channel;
+                            break;
+                    }
+                }
+
+                if (container.CurrentRgbFakeChannelSettings != null)
+                {
+                    foreach (var channel in container.CurrentRgbFakeChannelSettings)
+                    {
+                        switch (channel.Label)
+                        {
+                            case "Yellow Channels":
+                                YellowChannelsChannel = channel.Channel;
+                                YellowChannelsRgbFake = channel.RgbFake;
+                                break;
+
+                            case "Strobe Channels":
+                                StrobeChannelsChannel = channel.Channel;
+                                StrobeChannelsRgbFake = channel.RgbFake;
+                                break;
+                        }
                     }
                 }
             }
@@ -363,14 +378,16 @@ internal static class SettingsManager
 
             BroadcastUniverseSettingValue = 1;
 
-            MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106 };
-            MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
-            FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
-            StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
+            MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50 };
+            MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255 };
             RedChannelsChannel = new[] { 2, 9, 16, 23, 30, 37, 44, 51 };
-            BlueChannelsChannel = new[] { 3, 10, 17, 24, 31, 38, 45, 52 };
-            YellowChannelsChannel = new[] { 4, 11, 18, 25, 32, 39, 46, 53 };
-            GreenChannelsChannel = new[] { 5, 12, 19, 26, 33, 40, 47, 54 };
+            GreenChannelsChannel = new[] { 3, 10, 17, 24, 31, 38, 45, 52 };
+            BlueChannelsChannel = new[] { 4, 11, 18, 25, 32, 39, 46, 53 };
+            YellowChannelsChannel = new[] { 5, 12, 19, 26, 33, 40, 47, 54 };
+            YellowChannelsRgbFake = new[] { false, false, false, false, false, false, false, false, false };
+            StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
+            StrobeChannelsRgbFake = new[] { false, false, false, false, false, false, false, false, false };
+            FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
 
             HueAuthResultUsername = "";
             HueAuthResultStreamingClientKey = "";
